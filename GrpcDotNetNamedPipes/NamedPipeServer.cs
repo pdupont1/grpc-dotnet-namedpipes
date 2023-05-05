@@ -49,9 +49,9 @@ namespace GrpcDotNetNamedPipes
             Error?.Invoke(this, new NamedPipeErrorEventArgs(error));
         }
 
-        public void Start()
+        public Task StartAsync()
         {
-            _pool.Start();
+            return _pool.StartAsync();
         }
 
         public void Kill()

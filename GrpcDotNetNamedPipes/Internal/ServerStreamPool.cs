@@ -35,6 +35,8 @@ namespace GrpcDotNetNamedPipes.Internal
         private bool _started;
         private bool _stopped;
 
+        private int _serversWaiting;
+
         public ServerStreamPool(string pipeName, NamedPipeServerOptions options,
             Func<NamedPipeServerStream, Task> handleConnection, Action<Exception> invokeError)
         {
@@ -82,7 +84,7 @@ namespace GrpcDotNetNamedPipes.Internal
 #endif
         }
 
-        public void Start()
+        public async Task StartAsync()
         {
             if (_stopped)
             {
@@ -97,6 +99,23 @@ namespace GrpcDotNetNamedPipes.Internal
             for (int i = 0; i < PoolSize; i++)
             {
                 StartListenThread();
+            }
+
+            using (CancellationTokenSource waitServersToken = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
+            {
+                while (_serversWaiting < PoolSize && !waitServersToken.IsCancellationRequested)
+                {
+                    try
+                    {
+                        await Task.Delay(5, waitServersToken.Token);
+                    }
+                    catch (TaskCanceledException) { }
+                }
+
+                if(waitServersToken.IsCancellationRequested)
+                {
+                    throw new TimeoutException("Timed out waiting for servers to start.");
+                }
             }
 
             _started = true;
@@ -140,6 +159,7 @@ namespace GrpcDotNetNamedPipes.Internal
 
         private void WaitForConnection(NamedPipeServerStream pipeServer)
         {
+            ++_serversWaiting;
             try
             {
                 pipeServer.WaitForConnectionAsync(_cts.Token).Wait();
@@ -156,6 +176,10 @@ namespace GrpcDotNetNamedPipes.Internal
                 }
                 pipeServer.Dispose();
                 throw;
+            }
+            finally
+            {
+                --_serversWaiting;
             }
         }
 
