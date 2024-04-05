@@ -14,36 +14,52 @@
  * limitations under the License.
  */
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Grpc.Core;
+namespace GrpcDotNetNamedPipes.Internal;
 
-namespace GrpcDotNetNamedPipes.Internal
+internal class RequestStreamWriterImpl<T> : StreamWriterImpl<T>, IClientStreamWriter<T>
 {
-    internal class RequestStreamWriterImpl<T> : StreamWriterImpl<T>, IClientStreamWriter<T>
+    private readonly Task _initTask;
+    private bool _isInitialized;
+    private bool _isCompleted;
+
+    public RequestStreamWriterImpl(NamedPipeTransport stream, CancellationToken cancellationToken,
+        Marshaller<T> marshaller, Task initTask)
+        : base(stream, cancellationToken, marshaller)
     {
-        private bool _isCompleted;
+        _initTask = initTask;
+    }
 
-        public RequestStreamWriterImpl(NamedPipeTransport stream, CancellationToken cancellationToken, Marshaller<T> marshaller)
-         : base(stream, cancellationToken, marshaller)
+    public override Task WriteAsync(T message)
+    {
+        if (_isCompleted)
         {
+            throw new InvalidOperationException($"Request stream has already been completed.");
         }
+        return WriteAsyncCore(message);
+    }
 
-        public override Task WriteAsync(T message)
+    private async Task WriteAsyncCore(T message)
+    {
+        if (!_isInitialized)
         {
-            if (_isCompleted)
-            {
-                throw new InvalidOperationException($"Request stream has already been completed.");
-            }
-            return base.WriteAsync(message);
+            await _initTask.ConfigureAwait(false);
+            _isInitialized = true;
         }
-        
-        public Task CompleteAsync()
+        await base.WriteAsync(message).ConfigureAwait(false);
+    }
+
+    public async Task CompleteAsync()
+    {
+        if (!_isInitialized)
         {
-            Stream.Write().RequestStreamEnd().Commit();
-            _isCompleted = true;
-            return Task.CompletedTask;
+            await _initTask.ConfigureAwait(false);
+            _isInitialized = true;
         }
+        if (CancelToken.IsCancellationRequested)
+        {
+            throw new TaskCanceledException();
+        }
+        Stream.Write().RequestStreamEnd().Commit();
+        _isCompleted = true;
     }
 }

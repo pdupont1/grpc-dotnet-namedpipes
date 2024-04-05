@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-using System.Collections;
+namespace GrpcDotNetNamedPipes.Internal.Helpers;
 
-namespace GrpcDotNetNamedPipes.Tests.Helpers;
-
-class NamedPipeClassData : IEnumerable<object[]>
+internal static class SerializationHelpers
 {
-    public IEnumerator<object[]> GetEnumerator()
+    public static byte[] Serialize<T>(Marshaller<T> marshaller, T message)
     {
-        yield return new object[] { new NamedPipeChannelContextFactory() };
+        var serializationContext = new ByteArraySerializationContext();
+        marshaller.ContextualSerializer(message, serializationContext);
+        return serializationContext.SerializedData;
     }
 
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    public static T Deserialize<T>(Marshaller<T> marshaller, byte[] payload)
+    {
+        var deserializationContext = new ByteArrayDeserializationContext(payload);
+        return marshaller.ContextualDeserializer(deserializationContext);
+    }
 }

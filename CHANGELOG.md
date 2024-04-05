@@ -1,5 +1,26 @@
 # Changelog
 
+## 3.0.0
+- Potential breaking changes:
+  - Async calls are now fully async (they used to block until the pipe was connected)
+  - Using a single NamedPipeChannel object is now recommended for parallel calls
+- Fix an issue where heavily multi-threaded calls can stall on Windows
+- Use custom retry logic for pipe connections for more reliable connections
+- Fix a small memory leak
+- Fix trailers not being included in responses with errors
+- Fix invalid connections staying open forever
+
+## 2.1.1
+- Improve connection reliability in some cases
+- Update dependency versions
+
+## 2.1.0
+- Improve streaming performance
+- Improve connection reliability in some cases
+- Implement ServerCallContext.Peer ([#37](https://github.com/cyanfish/grpc-dotnet-namedpipes/issues/37))
+- Set cancellation token on client disconnect ([#30](https://github.com/cyanfish/grpc-dotnet-namedpipes/issues/30))
+- The [readme](https://github.com/cyanfish/grpc-dotnet-namedpipes) now has a comparison matrix for ASP.NET gRPC
+
 ## 2.0.0
 - Add macOS and Linux support
 - Change build targets to: net462, net6, netstandard2.0

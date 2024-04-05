@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2020 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-namespace GrpcDotNetNamedPipes.Tests.Helpers;
+namespace GrpcDotNetNamedPipes.Internal.Helpers;
 
-public class ChannelContext : IDisposable
+internal class ByteArrayDeserializationContext : DeserializationContext
 {
-    public Action OnDispose { get; set; }
+    private readonly byte[] _payload;
 
-    public TestService.TestServiceClient Client { get; set; }
-
-    public TestServiceImpl Impl { get; set; }
-
-    public void Dispose()
+    public ByteArrayDeserializationContext(byte[] payload)
     {
-        OnDispose.Invoke();
+        _payload = payload;
     }
+
+    public override int PayloadLength => _payload.Length;
+
+    public override byte[] PayloadAsNewBuffer() => _payload.ToArray();
+
+    public override ReadOnlySequence<byte> PayloadAsReadOnlySequence() => new(_payload);
 }
