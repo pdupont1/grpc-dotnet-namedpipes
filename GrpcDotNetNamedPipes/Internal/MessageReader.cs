@@ -41,10 +41,12 @@ namespace GrpcDotNetNamedPipes.Internal
         {
             try
             {
-                var combined =
+                using (var combined =
                     CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _callCancellationToken,
-                        _deadline.Token);
-                return await _payloadQueue.MoveNext(combined.Token).ConfigureAwait(false);
+                        _deadline.Token))
+                {
+                    return await _payloadQueue.MoveNext(combined.Token).ConfigureAwait(false);
+                }
             }
             catch (OperationCanceledException) 
             {

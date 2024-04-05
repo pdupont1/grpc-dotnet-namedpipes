@@ -166,14 +166,7 @@ namespace GrpcDotNetNamedPipes.Internal
             }
             catch (Exception)
             {
-                try
-                {
-                    pipeServer.Disconnect();
-                }
-                catch (Exception)
-                {
-                    // Ignore disconnection errors
-                }
+                SafeDisconnect(pipeServer);
                 pipeServer.Dispose();
                 throw;
             }
@@ -190,7 +183,7 @@ namespace GrpcDotNetNamedPipes.Internal
                 try
                 {
                     await _handleConnection(pipeServer);
-                    pipeServer.Disconnect();
+                    SafeDisconnect(pipeServer);
                 }
                 catch (Exception error)
                 {
@@ -201,6 +194,18 @@ namespace GrpcDotNetNamedPipes.Internal
                     pipeServer.Dispose();
                 }
             });
+        }
+
+        private void SafeDisconnect(NamedPipeServerStream pipeServer)
+        {
+            try
+            {
+                pipeServer.Disconnect();
+            }
+            catch (Exception)
+            {
+                // Ignore disconnection errors
+            }
         }
 
         public void Dispose()
