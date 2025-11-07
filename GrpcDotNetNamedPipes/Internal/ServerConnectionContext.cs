@@ -111,22 +111,29 @@ internal class ServerConnectionContext : TransportMessageHandler, IDisposable
     public void Error(Exception ex)
     {
         _logger.Log("RPC error");
-        IsCompleted = true;
-        if (Deadline != null && Deadline.IsExpired)
+        try
         {
-            WriteTrailers(StatusCode.DeadlineExceeded, "");
+            IsCompleted = true;
+            if (Deadline != null && Deadline.IsExpired)
+            {
+                WriteTrailers(StatusCode.DeadlineExceeded, "");
+            }
+            else if (CancellationTokenSource.IsCancellationRequested)
+            {
+                WriteTrailers(StatusCode.Cancelled, "");
+            }
+            else if (ex is RpcException rpcException)
+            {
+                WriteTrailers(rpcException.StatusCode, rpcException.Status.Detail);
+            }
+            else
+            {
+                WriteTrailers(StatusCode.Unknown, "Exception was thrown by handler.");
+            }
         }
-        else if (CancellationTokenSource.IsCancellationRequested)
+        catch (Exception e)
         {
-            WriteTrailers(StatusCode.Cancelled, "");
-        }
-        else if (ex is RpcException rpcException)
-        {
-            WriteTrailers(rpcException.StatusCode, rpcException.Status.Detail);
-        }
-        else
-        {
-            WriteTrailers(StatusCode.Unknown, "Exception was thrown by handler.");
+            _logger.Log("Failed to handle RPC error\n" + e);
         }
     }
 
@@ -153,6 +160,9 @@ internal class ServerConnectionContext : TransportMessageHandler, IDisposable
 
     private void WriteTrailers(StatusCode statusCode, string statusDetail)
     {
+        if (PipeStream is not { IsConnected: true }) 
+            return;
+
         Transport.Write().Trailers(statusCode, statusDetail, CallContext.ResponseTrailers).Commit();
     }
 
