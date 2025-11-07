@@ -160,8 +160,11 @@ internal class ServerConnectionContext : TransportMessageHandler, IDisposable
 
     private void WriteTrailers(StatusCode statusCode, string statusDetail)
     {
-        if (PipeStream is not { IsConnected: true }) 
+        if (PipeStream is not { IsConnected: true })
+        {
+            _logger.Log($"Won't write trailers. Pipe not connected. (Status: {statusCode} Detail: \"{statusDetail}\")");
             return;
+        }
 
         Transport.Write().Trailers(statusCode, statusDetail, CallContext.ResponseTrailers).Commit();
     }
