@@ -30,8 +30,8 @@ public class GrpcNamedPipeTests
     {
         _output = output;
     }
-
-    [Theory(Timeout = Timeout)]
+    
+    [Theory]
     [ClassData(typeof(MultiChannelClassData))]
     public void SimpleUnary(ChannelContextFactory factory)
     {
@@ -452,7 +452,7 @@ public class GrpcNamedPipeTests
         }
     }
 
-    [Theory(Timeout = Timeout)]
+    [Theory]
     [ClassData(typeof(NamedPipeClassData))]
     public void CallInfo(NamedPipeChannelContextFactory factory)
     {
@@ -464,7 +464,7 @@ public class GrpcNamedPipeTests
         Assert.Equal($"net.pipe://localhost/pid/{Process.GetCurrentProcess().Id}", ctx.Impl.Peer);
     }
 
-    [Theory(Timeout = Timeout)]
+    [Theory]
     [ClassData(typeof(MultiChannelClassData))]
     public void ConnectionTimeout(ChannelContextFactory factory)
     {
@@ -579,8 +579,8 @@ public class GrpcNamedPipeTests
         var response2 = await ctx2.Client.SimpleUnaryAsync(new RequestMessage { Value = 10 });
         Assert.Equal(10, response2.Value);
     }
-
-    [Theory(Timeout = Timeout)]
+    
+    [Theory]
     [ClassData(typeof(NamedPipeClassData))]
     public void StartServerAfterStop(NamedPipeChannelContextFactory factory)
     {
@@ -591,7 +591,7 @@ public class GrpcNamedPipeTests
     }
 
 #if NET6_0_OR_GREATER || NETFRAMEWORK
-    [Theory(Timeout = Timeout)]
+    [Theory]
     [ClassData(typeof(NamedPipeClassData))]
     public void SimpleUnaryWithACLs(NamedPipeChannelContextFactory factory)
     {
@@ -611,8 +611,8 @@ public class GrpcNamedPipeTests
         Assert.Equal(10, response.Value);
         Assert.True(ctx.Impl.SimplyUnaryCalled);
     }
-
-    [Theory(Timeout = Timeout)]
+    
+    [Theory]
     [ClassData(typeof(NamedPipeClassData))]
     public void SimpleUnaryWithACLsDenied(NamedPipeChannelContextFactory factory)
     {

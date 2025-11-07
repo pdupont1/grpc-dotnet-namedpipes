@@ -43,8 +43,8 @@ public class GrpcPerformanceTests
         stopwatch.Stop();
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
     }
-
-    [Theory(Timeout = Timeout)]
+    
+    [Theory]
     [ClassData(typeof(MultiChannelWithAspNetClassData))]
     public void UnarySequentialChannelsPerformance(ChannelContextFactory factory)
     {
@@ -78,8 +78,8 @@ public class GrpcPerformanceTests
         stopwatch.Stop();
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
     }
-
-    [Theory(Timeout = Timeout)]
+    
+    [Theory]
     [ClassData(typeof(MultiChannelWithAspNetClassData))]
     public void UnarySequentialCallsPerformance(ChannelContextFactory factory)
     {
@@ -110,8 +110,8 @@ public class GrpcPerformanceTests
         stopwatch.Stop();
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
     }
-
-    [Theory(Timeout = Timeout)]
+    
+    [Theory]
     [ClassData(typeof(MultiChannelWithAspNetClassData))]
     public void UnaryLargePayloadPerformance(ChannelContextFactory factory)
     {
@@ -123,8 +123,8 @@ public class GrpcPerformanceTests
         stopwatch.Stop();
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
     }
-
-    [Theory(Timeout = Timeout)]
+    
+    [Theory]
     [ClassData(typeof(MultiChannelWithAspNetClassData))]
     public void ChannelColdStartPerformance(ChannelContextFactory factory)
     {
@@ -135,8 +135,8 @@ public class GrpcPerformanceTests
         stopwatch.Stop();
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
     }
-
-    [Theory(Timeout = Timeout)]
+    
+    [Theory]
     [ClassData(typeof(MultiChannelWithAspNetClassData))]
     public void ChannelWarmStartPerformance(ChannelContextFactory factory)
     {

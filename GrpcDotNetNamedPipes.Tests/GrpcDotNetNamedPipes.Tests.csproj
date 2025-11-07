@@ -6,15 +6,14 @@
         <LangVersion>13</LangVersion>
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>../GrpcDotNetNamedPipes/public_signing_key.snk</AssemblyOriginatorKeyFile>
+        <TargetFrameworks>net8</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Google.Protobuf" Version="3.29.3" />
-        <PackageReference Include="Grpc.Core.Api" Version="2.67.0" />
-        <PackageReference Include="Grpc.Tools" Version="2.69.0" PrivateAssets="All" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-        <PackageReference Include="xunit" Version="2.6.2" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+        <PackageReference Include="Grpc.Tools" Version="2.76.0" PrivateAssets="All" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
+        <PackageReference Include="xunit" Version="2.9.3" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup>
