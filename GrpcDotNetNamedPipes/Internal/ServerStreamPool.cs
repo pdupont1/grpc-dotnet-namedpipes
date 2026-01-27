@@ -170,7 +170,7 @@ internal class ServerStreamPool : IDisposable
             }
             finally
             {
-                pipeServer.Dispose();
+                await pipeServer.DisposeAsync();
             }
         });
     }
