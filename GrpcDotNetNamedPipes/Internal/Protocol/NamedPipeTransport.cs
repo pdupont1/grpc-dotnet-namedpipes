@@ -116,11 +116,11 @@ internal class NamedPipeTransport
                     var payload = new byte[message.PayloadInfo.Size];
                     if (message.PayloadInfo.InSamePacket)
                     {
-                        packet.Read(payload, 0, payload.Length);
+                        _ = packet.Read(payload, 0, payload.Length);
                     }
                     else
                     {
-                        _pipeStream.Read(payload, 0, payload.Length);
+                        _ = _pipeStream.Read(payload, 0, payload.Length);
                     }
 
                     messageHandler.HandlePayload(payload);
