@@ -25,13 +25,13 @@ internal class ServerStreamPool : IDisposable
     private readonly CancellationTokenSource _cts = new();
     private readonly string _pipeName;
     private readonly NamedPipeServerOptions _options;
-    private readonly Func<NamedPipeServerStream, Task> _handleConnection;
+    private readonly Func<NamedPipeServerStream, CancellationToken, Task> _handleConnection;
     private readonly Action<Exception> _invokeError;
     private bool _started;
     private bool _stopped;
 
     public ServerStreamPool(string pipeName, NamedPipeServerOptions options,
-        Func<NamedPipeServerStream, Task> handleConnection, Action<Exception> invokeError)
+        Func<NamedPipeServerStream, CancellationToken, Task> handleConnection, Action<Exception> invokeError)
     {
         _pipeName = pipeName;
         _options = options;
@@ -99,19 +99,22 @@ internal class ServerStreamPool : IDisposable
 
     private void StartListenThread()
     {
-        var thread = new Thread(ConnectionLoop);
-        thread.Start();
+        _ = Task.Factory.StartNew(ConnectionLoopAsync, _cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }
 
-    private void ConnectionLoop()
+    private async Task ConnectionLoopAsync()
     {
         int fallback = FallbackMin;
         while (true)
         {
             try
             {
-                ListenForConnection();
+                await ListenForConnectionAsync(_cts.Token);
                 fallback = FallbackMin;
+            }
+            catch (OperationCanceledException)
+            {
+                break;
             }
             catch (Exception error)
             {
@@ -120,24 +123,24 @@ internal class ServerStreamPool : IDisposable
                     break;
                 }
                 _invokeError(error);
-                Thread.Sleep(fallback);
+                await Task.Delay(fallback, _cts.Token);
                 fallback = Math.Min(fallback * 2, FallbackMax);
             }
         }
     }
 
-    private void ListenForConnection()
+    private async Task ListenForConnectionAsync(CancellationToken cToken)
     {
         var pipeServer = CreatePipeServer();
-        WaitForConnection(pipeServer);
-        RunHandleConnection(pipeServer);
+        await WaitForConnectionAsync(pipeServer, cToken);
+        await RunHandleConnectionAsync(pipeServer, cToken);
     }
 
-    private void WaitForConnection(NamedPipeServerStream pipeServer)
+    private async Task WaitForConnectionAsync(NamedPipeServerStream pipeServer, CancellationToken cToken)
     {
         try
         {
-            pipeServer.WaitForConnectionAsync(_cts.Token).Wait();
+            await pipeServer.WaitForConnectionAsync(cToken);
         }
         catch (Exception)
         {
@@ -149,30 +152,31 @@ internal class ServerStreamPool : IDisposable
             {
                 // Ignore disconnection errors
             }
-            pipeServer.Dispose();
+            await pipeServer.DisposeAsync();
             throw;
         }
     }
 
-    private void RunHandleConnection(NamedPipeServerStream pipeServer)
+    private async Task RunHandleConnectionAsync(NamedPipeServerStream pipeServer, CancellationToken cToken)
     {
-        Task.Run(async () =>
+        try
         {
-            try
-            {
-                await _handleConnection(pipeServer);
-                if (pipeServer.IsConnected)
-                    pipeServer.Disconnect();
-            }
-            catch (Exception error)
-            {
-                _invokeError(error);
-            }
-            finally
-            {
-                await pipeServer.DisposeAsync();
-            }
-        });
+            await _handleConnection(pipeServer, cToken);
+            if (pipeServer.IsConnected)
+                pipeServer.Disconnect();
+        }
+        catch (OperationCanceledException)
+        {
+            //ignore
+        }
+        catch (Exception error)
+        {
+            _invokeError(error);
+        }
+        finally
+        {
+            await pipeServer.DisposeAsync();
+        }
     }
 
     public void Dispose()

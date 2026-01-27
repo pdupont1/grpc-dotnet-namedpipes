@@ -68,7 +68,7 @@ public class NamedPipeChannel : CallInvoker
         Task.Run(async () =>
         {
             await ctx.InitTask.ConfigureAwait(false);
-            await new PipeReader(stream, ctx, logger, ctx.Dispose).ReadLoop().ConfigureAwait(false);
+            await new PipeReader(stream, ctx, logger, ctx.Dispose).ReadLoopAsync(callOptions.CancellationToken).ConfigureAwait(false);
         });
         return ctx;
     }

@@ -90,7 +90,7 @@ internal class ClientConnectionContext : TransportMessageHandler, IDisposable
             }
             catch (Exception ex)
             {
-                _pipeStream.Dispose();
+                await _pipeStream.DisposeAsync();
 
                 if (ex is TimeoutException || ex is IOException)
                 {

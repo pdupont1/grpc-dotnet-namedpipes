@@ -35,51 +35,51 @@ internal class NamedPipeTransport
         _txQueue = new WriteTransactionQueue(pipeStream);
     }
 
-    private async Task<MemoryStream> ReadPacketFromPipe()
+    private async Task<MemoryStream> ReadPacketFromPipe(CancellationToken cToken)
     {
         var packet = new MemoryStream();
         if (PlatformConfig.SizePrefix)
         {
-            await ReadPacketWithSizePrefix(packet);
+            await ReadPacketWithSizePrefixAsync(packet, cToken);
         }
         else
         {
-            await ReadPacketWithMessage(packet);
+            await ReadPacketWithMessage(packet, cToken);
         }
 
         packet.Position = 0;
         return packet;
     }
 
-    private async Task ReadPacketWithMessage(MemoryStream packet)
+    private async Task ReadPacketWithMessage(MemoryStream packet, CancellationToken cToken)
     {
         do
         {
-            int readBytes = await _pipeStream.ReadAsync(_messageBuffer, 0, MessageBufferSize).ConfigureAwait(false);
+            int readBytes = await _pipeStream.ReadAsync(_messageBuffer, 0, MessageBufferSize, cToken).ConfigureAwait(false);
             packet.Write(_messageBuffer, 0, readBytes);
         } while (!_pipeStream.IsMessageComplete);
     }
 
-    private async Task ReadPacketWithSizePrefix(MemoryStream packet)
+    private async Task ReadPacketWithSizePrefixAsync(MemoryStream packet, CancellationToken cToken)
     {
-        int bytesToRead = await ReadSizePrefix();
+        int bytesToRead = await ReadSizePrefixAsync(cToken);
         do
         {
             var bytesToReadIntoBuffer = Math.Min(bytesToRead, MessageBufferSize);
-            int readBytes = await _pipeStream.ReadAsync(_messageBuffer, 0, bytesToReadIntoBuffer)
+            int readBytes = await _pipeStream.ReadAsync(_messageBuffer, 0, bytesToReadIntoBuffer, cToken)
                 .ConfigureAwait(false);
             if (readBytes == 0)
             {
                 throw new EndOfPipeException();
             }
-            packet.Write(_messageBuffer, 0, readBytes);
+            await packet.WriteAsync(_messageBuffer, 0, readBytes, cToken);
             bytesToRead -= readBytes;
         } while (bytesToRead > 0);
     }
 
-    private async Task<int> ReadSizePrefix()
+    private async Task<int> ReadSizePrefixAsync(CancellationToken cToken)
     {
-        int readBytes = await _pipeStream.ReadAsync(_messageBuffer, 0, 4).ConfigureAwait(false);
+        int readBytes = await _pipeStream.ReadAsync(_messageBuffer, 0, 4, cToken).ConfigureAwait(false);
         if (readBytes == 0)
         {
             throw new EndOfPipeException();
@@ -91,9 +91,9 @@ internal class NamedPipeTransport
         return BitConverter.ToInt32(_messageBuffer, 0);
     }
 
-    public async Task<bool> Read(TransportMessageHandler messageHandler)
+    public async Task<bool> Read(TransportMessageHandler messageHandler, CancellationToken cToken)
     {
-        var packet = await ReadPacketFromPipe().ConfigureAwait(false);
+        var packet = await ReadPacketFromPipe(cToken).ConfigureAwait(false);
         while (packet.Position < packet.Length)
         {
             var message = new TransportMessage();
@@ -116,11 +116,11 @@ internal class NamedPipeTransport
                     var payload = new byte[message.PayloadInfo.Size];
                     if (message.PayloadInfo.InSamePacket)
                     {
-                        _ = packet.Read(payload, 0, payload.Length);
+                        _ = await packet.ReadAsync(payload, 0, payload.Length, cToken);
                     }
                     else
                     {
-                        _ = _pipeStream.Read(payload, 0, payload.Length);
+                        _ = await _pipeStream.ReadAsync(payload, 0, payload.Length, cToken);
                     }
 
                     messageHandler.HandlePayload(payload);

@@ -63,11 +63,11 @@ public class NamedPipeServer : IDisposable
         _pool.Dispose();
     }
 
-    private async Task HandleConnection(NamedPipeServerStream pipeStream)
+    private async Task HandleConnection(NamedPipeServerStream pipeStream, CancellationToken cToken)
     {
         var logger = ConnectionLogger.Server(_log);
         var ctx = new ServerConnectionContext(pipeStream, logger, _methodHandlers);
-        await Task.Run(new PipeReader(pipeStream, ctx, logger, ctx.Dispose, InvokeError).ReadLoop);
+        await Task.Run(() => new PipeReader(pipeStream, ctx, logger, ctx.Dispose, InvokeError).ReadLoopAsync(cToken), cToken);
     }
 
     private class ServiceBinderImpl : ServiceBinderBase

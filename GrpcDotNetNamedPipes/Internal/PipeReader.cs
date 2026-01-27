@@ -36,12 +36,12 @@ internal class PipeReader
         _transport = new NamedPipeTransport(_pipeStream, logger);
     }
 
-    public async Task ReadLoop()
+    public async Task ReadLoopAsync(CancellationToken cToken)
     {
         try
         {
             while (_pipeStream.IsConnected &&
-                   await _transport.Read(_messageHandler).ConfigureAwait(false))
+                   await _transport.Read(_messageHandler, cToken).ConfigureAwait(false))
             {
             }
             _logger.Log("Pipe disconnected");
